@@ -1,0 +1,86 @@
+---
+title: "PA1_TEMPLATE"
+author: "Kaley Hogarth"
+date: "11/23/2020"
+output: html_document
+---
+# Loading Libraries
+```{r Loading Packages, include=FALSE}
+Libs<-c("BAS", "broom", "car", "dplyr", "expss", "GGally", "ggExtra", "ggplot2", "ggpubr", "ggrepel","ggsignif", "Hmisc", "hrbrthemes", "knitr", "lattice","matrixStats", "Metrics", "nlme", "purrr", "readr", "rmarkdown", "rstatix", "statsr", "stringr", "tibble", "tidyr", "timeDate","viridis")
+
+lapply(Libs, library, character.only=TRUE)
+```
+
+
+# Loading and Processing Data
+```{r,echo = TRUE}
+data<-read.csv(file = "activity.csv")
+```
+
+# Mean Total Steps Per Day 
+```{r,echo = TRUE}
+total<-data %>% group_by(date) %>% summarise(Total=sum(steps, na.rm=TRUE))
+
+ggplot(data=total, aes(x=Total))+geom_histogram(binwidth =500)+labs(title="Total Steps Taken per Day", x="Total Daily Steps")
+
+mean<-mean(total$Total, na.rm = TRUE)
+median<-median(total$Total, na.rm = TRUE)
+
+print(mean)
+print(median)
+
+```
+
+# Average Daily Pattern
+```{r,echo=TRUE}
+interval<-data %>% group_by(interval) %>% summarise(Avg=mean(steps, na.rm= TRUE))
+which.max(interval$Avg)
+ggplot(data=interval, aes(x=interval, y=Avg))+geom_line()+geom_point()
+```
+
+
+
+# Input Missing Values
+```{r,echo=TRUE}
+missing<-count(is.na(data$steps))
+print(missing)
+
+filled<-data
+
+interval.mean<-data %>% group_by(interval) %>% summarise(Mean=mean(steps, na.rm=TRUE))
+interval.mean<-interval.mean%>%summarise(AVG=mean(Mean, na.rm=TRUE))
+interval.mean<-as.numeric(interval.mean)
+filled$steps<-replace_na(filled$steps, interval.mean)
+
+filled.total<-filled %>% group_by(date) %>% summarise(Total=sum(steps, na.rm=TRUE))
+
+ggplot(data=filled.total, aes(x=Total))+geom_histogram(binwidth =500)+labs(title="Total Steps Taken per Day", x="Total Daily Steps")
+
+mean_filled.total<-mean(filled.total$Total, na.rm = TRUE)
+median_filled.total<-median(filled.total$Total, na.rm = TRUE)
+
+print(mean_filled.total)
+print(median_filled.total)
+```
+
+
+# Weekday / Weekend Differences
+```{r, echo=TRUE}
+week.data<-filled
+
+week.data<-week.data %>% mutate(Is.Weekday=isWeekday(date))
+week.data<-week.data %>% mutate(Weekday=case_when(Is.Weekday == "TRUE"~ "Weekday", Is.Weekday == "FALSE" ~ "Weekend"))
+week.data$Weekday<-as.factor(week.data$Weekday)
+week.data.graph<-week.data %>% group_by(interval,Weekday) %>% summarise(Mean.Steps=mean(steps, na.rm=FALSE))
+
+ggplot(data=week.data.graph, aes(x=interval, y=Mean.Steps,colour=Weekday))+geom_point()+geom_line()+facet_grid(Weekday~.)+labs(title="Average Steps per Interval", y="Average Steps")
+```
+
+
+
+
+
+
+
+
+
